@@ -56,7 +56,10 @@
       <p class="reward">This code gives you <strong>+2 bonus card
         slots</strong> when you scan your first photocard.</p>
     </div>
-    <div id="no-code" hidden>
+    <!-- visible by default: this is also the no-JS state, so the page
+         never shows "copy the code" with no code (script hides it
+         when a valid code renders) -->
+    <div id="no-code">
       <h1>Join your friend on Poca 3D</h1>
       <p class="reward">Ask them for their invite code, then enter it in
         the app — you'll both get bonus card slots.</p>
@@ -68,7 +71,7 @@
     </a>
 
     <ol class="steps">
-      <li>Copy the code above.</li>
+      <li>Copy the code your friend sent you.</li>
       <li>Download Poca 3D and answer "How did you hear about us?"
           with <strong>A friend</strong>.</li>
       <li>Paste the code, scan your first photocard, and your bonus
@@ -90,17 +93,29 @@
                    "DYK","NAZ","KKK","666","RAPE","JEW"];
     var valid = /^[0-9A-HJKMNP-TV-Z]{6}$/.test(code) &&
         !blocked.some(function (b) { return code.indexOf(b) !== -1; });
-    document.getElementById(valid ? "with-code" : "no-code").hidden = false;
-    if (!valid) return;
+    if (!valid) return;   // #no-code stays visible (the default state)
+    document.getElementById("no-code").hidden = true;
+    document.getElementById("with-code").hidden = false;
     var box = document.getElementById("code");
     box.textContent = code.slice(0, 3) + "-" + code.slice(3);
     box.addEventListener("click", function () {
-      // clipboard needs a user gesture on iOS Safari — this is one
+      // clipboard needs a user gesture on iOS Safari — this is one.
+      // In-app webviews (KakaoTalk/LINE/Instagram) can reject the
+      // async Clipboard API even with a gesture: fall back to telling
+      // the user about the long-press path instead of lying "tap to
+      // copy" while nothing happens.
+      var hint = document.getElementById("copyhint");
+      function fallback() {
+        hint.textContent = "long-press the code to select and copy it";
+      }
+      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+        fallback();
+        return;
+      }
       navigator.clipboard.writeText(code).then(function () {
-        var hint = document.getElementById("copyhint");
         hint.textContent = "copied ✓";
         hint.className = "copy-hint copied";
-      });
+      }, fallback);
     });
   })();
 </script>
