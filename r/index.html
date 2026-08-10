@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>You've been invited — Poca 3D</title>
+<meta name="description" content="A friend invited you to Poca 3D. Their code gives you bonus card slots.">
+<!-- referral pages must never be indexed: crawled ?c= URLs would serve
+     random strangers' codes under our name (plan §Phase 5) -->
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://photocard3d.com/r/">
+<link rel="stylesheet" href="/assets/style.css">
+<style>
+  .invite { text-align: center; padding: 56px 0 24px; }
+  .invite h1 { margin: 18px 0 10px; }
+  .code-box {
+    display: inline-block; margin: 26px auto 8px;
+    padding: 22px 34px; border-radius: 18px;
+    background: rgba(140, 120, 220, 0.12);
+    border: 1.5px solid rgba(160, 140, 235, 0.55);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 44px; letter-spacing: 6px; font-weight: 700;
+    cursor: pointer; user-select: all;
+  }
+  .copy-hint { font-size: 14px; opacity: 0.65; margin: 6px 0 26px; }
+  .copied { color: #7ee2a8; }
+  .reward { font-size: 17px; margin: 4px 0 30px; }
+  .store-btn {
+    display: inline-block; padding: 16px 34px; border-radius: 14px;
+    background: #fff; color: #000 !important; font-weight: 600;
+    text-decoration: none; font-size: 17px;
+  }
+  .steps { max-width: 420px; margin: 40px auto 0; text-align: left;
+           font-size: 15px; opacity: 0.85; }
+  .steps li { margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="mark">P</span> Poca 3D</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap invite">
+    <span class="pill">You've been invited</span>
+
+    <!-- populated by the script below; the no-code fallback shows if
+         ?c= is missing or fails strict validation -->
+    <div id="with-code" hidden>
+      <h1>Your friend's code</h1>
+      <div class="code-box" id="code" title="Tap to copy"></div>
+      <p class="copy-hint" id="copyhint">tap the code to copy it</p>
+      <p class="reward">This code gives you <strong>+2 bonus card
+        slots</strong> when you scan your first photocard.</p>
+    </div>
+    <div id="no-code" hidden>
+      <h1>Join your friend on Poca 3D</h1>
+      <p class="reward">Ask them for their invite code, then enter it in
+        the app — you'll both get bonus card slots.</p>
+    </div>
+
+    <a class="store-btn"
+       href="https://apps.apple.com/us/app/poca-3d-kpop-photocards/id6797804042">
+      Download on the App Store
+    </a>
+
+    <ol class="steps">
+      <li>Copy the code above.</li>
+      <li>Download Poca 3D and answer "How did you hear about us?"
+          with <strong>A friend</strong>.</li>
+      <li>Paste the code, scan your first photocard, and your bonus
+          slots unlock.</li>
+    </ol>
+  </div>
+</main>
+
+<script>
+  // strict Crockford-base32 validation (no I/L/O/U): anything else —
+  // including injected slurs or scripts — falls back to the neutral
+  // page. The code is only ever written via textContent, never HTML.
+  (function () {
+    var raw = new URLSearchParams(location.search).get("c") || "";
+    var code = raw.toUpperCase().replace(/-/g, "");
+    // same substring blocklist as the app's generator: a hand-crafted
+    // ?c= must never make this page display what we'd never mint
+    var blocked = ["ASS","SEX","FAG","GAY","KYS","NGR","FCK","SHT",
+                   "DYK","NAZ","KKK","666","RAPE","JEW"];
+    var valid = /^[0-9A-HJKMNP-TV-Z]{6}$/.test(code) &&
+        !blocked.some(function (b) { return code.indexOf(b) !== -1; });
+    document.getElementById(valid ? "with-code" : "no-code").hidden = false;
+    if (!valid) return;
+    var box = document.getElementById("code");
+    box.textContent = code.slice(0, 3) + "-" + code.slice(3);
+    box.addEventListener("click", function () {
+      // clipboard needs a user gesture on iOS Safari — this is one
+      navigator.clipboard.writeText(code).then(function () {
+        var hint = document.getElementById("copyhint");
+        hint.textContent = "copied ✓";
+        hint.className = "copy-hint copied";
+      });
+    });
+  })();
+</script>
+</body>
+</html>
