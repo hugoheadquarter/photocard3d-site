@@ -5,11 +5,323 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Poca 3D — Your photocards, in 3D</title>
 <meta name="description" content="Scan a photocard with your iPhone and it becomes a real 3D card you can spin, light, and shelve. Everything happens on your device.">
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="canonical" href="https://photocard3d.com/">
+<meta name="theme-color" content="#0a0812">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231b1629'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' fill='%23a594e0' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+<meta property="og:site_name" content="Poca 3D">
 <meta property="og:title" content="Poca 3D — Your photocards, in 3D">
 <meta property="og:description" content="Scan a photocard with your iPhone and it becomes a real 3D card you can spin, light, and shelve.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://photocard3d.com/">
+<meta name="twitter:card" content="summary">
+
+<style>
+/* Poca 3D — photocard3d.com
+   Single file, zero external requests (no web fonts, no images, no
+   scripts): the site keeps the same promise as the app — nothing
+   leaves the page. Palette is the app's own midnight + lavender. */
+
+:root {
+  --bg-top: #1b1629;      /* app midnight gradient, top */
+  --bg-bottom: #0a0812;   /* app midnight gradient, bottom */
+  --surface: rgba(165, 148, 224, 0.07);
+  --border: rgba(165, 148, 224, 0.22);
+  --ink: #f4f1fb;
+  --ink-dark: #17121f;
+  --muted: #a99fc4;
+  --accent: #a594e0;      /* app lavender */
+  --accent-deep: #6c4bd3; /* brand electric violet */
+  --paper: #f3eee6;
+  --radius: 18px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { color-scheme: dark; scroll-behavior: smooth; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom) 60%)
+    fixed, var(--bg-bottom);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 1020px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ---------- header ---------- */
+
+header.site { padding: 22px 0; }
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+}
+.brand:hover { text-decoration: none; }
+
+.mark {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: linear-gradient(160deg, #2a2140, #171226);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+}
+
+/* ---------- hero ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+  gap: 40px;
+  padding: 64px 0 84px;
+}
+
+.pill {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 14px;
+  margin-bottom: 22px;
+}
+
+.hero h1 {
+  font-size: clamp(2.6rem, 6.5vw, 4.1rem);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  margin-bottom: 20px;
+}
+
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(100deg, var(--accent), var(--accent-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero p {
+  max-width: 34em;
+  font-size: 1.08rem;
+  color: var(--muted);
+}
+
+/* the app's own button language: solid lavender, dark ink */
+.cta {
+  display: inline-block;
+  margin-top: 28px;
+  background: var(--accent);
+  color: var(--ink-dark);
+  font-weight: 700;
+  font-size: 1.02rem;
+  padding: 15px 30px;
+  border-radius: 999px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 10px 34px rgba(108, 75, 211, 0.35);
+}
+.cta:hover {
+  text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(108, 75, 211, 0.45);
+}
+
+/* ---------- the 3D card ---------- */
+
+.scene {
+  justify-self: center;
+  width: 232px;
+  aspect-ratio: 55 / 85;         /* a real photocard's proportions */
+  perspective: 1100px;
+  position: relative;
+}
+
+.card3d {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  animation: turn 14s linear infinite;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;           /* ~3mm corner on a 55mm card */
+  backface-visibility: hidden;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.14) inset,
+    0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.front {
+  background:
+    radial-gradient(120% 90% at 20% 10%, #4a3a7a 0%, transparent 55%),
+    radial-gradient(120% 100% at 85% 90%, #2c1f52 0%, transparent 60%),
+    linear-gradient(160deg, #352960 0%, #1d1636 55%, #120d24 100%);
+  display: grid;
+  place-items: center;
+}
+
+.front .monogram {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 84px;
+  color: rgba(165, 148, 224, 0.9);
+  text-shadow: 0 2px 24px rgba(108, 75, 211, 0.55);
+}
+
+.front .shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.16) 46%,
+    rgba(255, 255, 255, 0.05) 54%,
+    transparent 68%);
+}
+
+.back {
+  transform: rotateY(180deg);
+  background:
+    linear-gradient(180deg, #f6f2ea, var(--paper));
+  display: grid;
+  place-content: center;
+  gap: 14px;
+}
+
+.back .note {
+  font-family: "Bradley Hand", "Marker Felt", "Segoe Script", cursive;
+  font-size: 26px;
+  color: #4a4335;
+  transform: rotate(-3deg);
+}
+
+.back .line,
+.back .line.short {
+  width: 120px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(74, 67, 53, 0.18);
+}
+.back .line.short { width: 78px; }
+
+.floor {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: -34px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(50% 50% at 50% 50%,
+    rgba(108, 75, 211, 0.35), transparent 70%);
+  filter: blur(6px);
+}
+
+@keyframes turn {
+  from { transform: rotateY(0deg) rotateX(4deg); }
+  to   { transform: rotateY(360deg) rotateX(4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card3d { animation: none; transform: rotateY(-22deg) rotateX(4deg); }
+  html { scroll-behavior: auto; }
+}
+
+/* ---------- features ---------- */
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  padding-bottom: 96px;
+}
+
+.feature {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 22px;
+}
+
+.feature h3 {
+  font-size: 1.02rem;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+
+.feature p {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+@media (hover: hover) {
+  .feature { transition: transform 0.25s ease, border-color 0.25s ease; }
+  .feature:hover {
+    transform: translateY(-3px);
+    border-color: rgba(165, 148, 224, 0.45);
+  }
+}
+
+/* ---------- footer ---------- */
+
+footer.site {
+  border-top: 1px solid rgba(165, 148, 224, 0.14);
+  padding: 30px 0 44px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+footer.site nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-bottom: 12px;
+}
+
+footer.site a { color: var(--muted); }
+footer.site a:hover { color: var(--accent); text-decoration: none; }
+
+/* ---------- small screens ---------- */
+
+@media (max-width: 780px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 64px;
+    padding: 40px 0 72px;
+    text-align: left;
+  }
+  .scene { width: 196px; }
+}
+</style>
 </head>
 <body>
 
@@ -19,15 +331,36 @@
   </div>
 </header>
 
-<div class="wrap">
+<main class="wrap">
   <section class="hero">
-    <span class="pill">Coming soon to the App Store</span>
-    <h1>Your photocards,<br>in 3D.</h1>
-    <p>
-      Scan a photocard with your iPhone and it becomes a real 3D card —
-      measured to its true size, lit like the real thing, and standing on a
-      shelf you can spin and rearrange.
-    </p>
+    <div class="hero-copy">
+      <span class="pill">Now on the App&nbsp;Store</span>
+      <h1>Your photocards,<br><em>in&nbsp;3D.</em></h1>
+      <p>
+        Scan a photocard with your iPhone and it becomes a real 3D card —
+        measured to its true size, lit like the real thing, and standing on a
+        shelf you can spin and rearrange.
+      </p>
+      <a class="cta"
+         href="https://apps.apple.com/us/app/poca-3d-kpop-photocards-app/id6797804042">
+        Download on the App&nbsp;Store
+      </a>
+    </div>
+
+    <div class="scene" aria-hidden="true">
+      <div class="card3d">
+        <div class="face front">
+          <span class="shine"></span>
+          <span class="monogram">P</span>
+        </div>
+        <div class="face back">
+          <span class="note">for you ♡</span>
+          <span class="line"></span>
+          <span class="line short"></span>
+        </div>
+      </div>
+      <div class="floor"></div>
+    </div>
   </section>
 
   <section class="features">
@@ -60,7 +393,7 @@
       </p>
     </div>
   </section>
-</div>
+</main>
 
 <footer class="site">
   <div class="wrap">
